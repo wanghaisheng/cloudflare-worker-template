@@ -92,7 +92,7 @@ export default {
             await client.connect();
 
             if (action === 'insert') {
-                const csvUrl = 'https://example.com/cloudflare_data.csv'; // Replace with your CSV URL
+                const csvUrl = 'https://tranco-list.eu/download/YXW2G/full'; // Replace with your CSV URL
                 const csvText = await downloadCSV(csvUrl);
                 await insertData(csvText);
                 return new Response('Data inserted successfully', { status: 200 });

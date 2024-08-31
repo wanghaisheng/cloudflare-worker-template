@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Management</title>
+</head>
+<body>
+    <h1>Data Management</h1>
+    <form id="actionForm">
+        <label for="action">Select Action:</label>
+        <select id="action" name="action">
+            <option value="insert">Insert Data</option>
+            <option value="generate">Generate Report</option>
+        </select>
+        <label for="version">Select Version (for Report Generation):</label>
+        <input type="text" id="version" name="version" placeholder="e.g., v20240831" />
+        <button type="submit">Submit</button>
+    </form>
+    <div id="result"></div>
+    <script src="script.js"></script>
+</body>
+</html>

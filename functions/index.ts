@@ -1,7 +1,11 @@
 import { Client } from 'pg';
 
+export interface Env {
+    DB_CONNECTION_STRING: string;  // Add environment variable
+}
+
 const client = new Client({
-    connectionString: 'your-turso-connection-string' // Replace with your database connection string
+    connectionString: '', // Will be set later
 });
 
 async function downloadCSV(url: string): Promise<string> {
@@ -14,7 +18,6 @@ async function insertData(csvText: string): Promise<void> {
     const lines = csvText.split('\n').slice(1); // Skip header
     const rows = lines.map(line => line.split(','));
 
-    // Example: parse data into objects
     const data = rows.map(row => ({
         rank: parseInt(row[0], 10),
         domain: row[1]
@@ -23,7 +26,6 @@ async function insertData(csvText: string): Promise<void> {
     const updateDate = new Date().toISOString().split('T')[0];
     const version = `v${updateDate.replace(/-/g, '')}`;
 
-    // Insert into UpdateHistory
     await client.query(
         'INSERT INTO update_history (update_date, version, description) VALUES ($1, $2, $3)',
         [updateDate, version, 'Monthly import']
@@ -33,7 +35,6 @@ async function insertData(csvText: string): Promise<void> {
         [version]
     )).rows[0].id;
 
-    // Insert into TrancoDomain
     for (const item of data) {
         await client.query(
             'INSERT INTO tranco_domains (rank, domain, update_id) VALUES ($1, $2, $3)',
@@ -79,10 +80,13 @@ async function generateReports(version: string): Promise<void> {
 }
 
 export default {
-    async fetch(request: Request): Promise<Response> {
+    async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
         const action = url.searchParams.get('action');
         const version = url.searchParams.get('version') || 'latest';
+
+        // Set the connection string from the environment variable
+        client.connectionString = env.DB_CONNECTION_STRING;
 
         try {
             await client.connect();
@@ -101,7 +105,6 @@ export default {
         } catch (error) {
             return new Response(`Error: ${error.message}`, { status: 500 });
         } finally {
-            // Ensure client is disconnected after use
             await client.end();
         }
     }

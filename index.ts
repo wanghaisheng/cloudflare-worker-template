@@ -47,7 +47,7 @@ async function insertData(csvText: string): Promise<void> {
     }
 }
 
-async function generateReports(): Promise<void> {
+async function generateReports(version: string): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     const periods = {
         '1 month': [new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0], today],
@@ -76,8 +76,8 @@ async function generateReports(): Promise<void> {
 
             const reportData = JSON.stringify(result.rows);
             await client.query(
-                'INSERT INTO rank_reports (period, report_date, data) VALUES ($1, $2, $3)',
-                [period, today, reportData]
+                'INSERT INTO rank_reports (period, report_date, data, version) VALUES ($1, $2, $3, $4)',
+                [period, today, reportData, version]
             );
         }
     }
@@ -86,18 +86,26 @@ async function generateReports(): Promise<void> {
 export default {
     async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
         try {
+            const url = new URL(request.url);
+            const action = url.searchParams.get('action');
+            const version = url.searchParams.get('version') || 'latest';
+
             await client.connect();
 
-            const csvUrl = 'https://example.com/cloudflare_data.csv';
-            const csvText = await downloadCSV(csvUrl);
-            await insertData(csvText);
-            await generateReports();
-
-            return new Response('Reports generated successfully', { status: 200 });
+            if (action === 'insert') {
+                const csvUrl = 'https://example.com/cloudflare_data.csv';
+                const csvText = await downloadCSV(csvUrl);
+                await insertData(csvText);
+                return new Response('Data inserted successfully', { status: 200 });
+            } else if (action === 'generate') {
+                await generateReports(version);
+                return new Response('Reports generated successfully', { status: 200 });
+            } else {
+                return new Response('Invalid action', { status: 400 });
+            }
         } catch (error) {
             return new Response(`Error: ${error.message}`, { status: 500 });
         } finally {
-            // Close the database connection, but don't block returning the response
             ctx.waitUntil(client.end());
         }
     }
